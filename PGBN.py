@@ -22,7 +22,7 @@ import pickle
 import json
 import os
 from dic_top_vision import dic_topic_vision
-
+from topic_tree import plot_tree
 ## function
 import PGBN_sampler
 realmin = 2.2e-308
@@ -39,7 +39,7 @@ class PGBN():
     """
     Thanks for chaojie
     """
-    def __init__(self, train_data, K = [128,64,32]):
+    def __init__(self, train_data, K = [128,64,32], voc=None, save_fre=100):
         """
         train_data : V * N
         K : default [128,64,32]
@@ -52,6 +52,9 @@ class PGBN():
         self.Supara = Supara
         self.Supara['eta'] = np.ones(self.T)*0.01
         self.init_param()
+        self.save_fre = save_fre
+        if voc is not None: 
+            self.voc = voc
 
     def init_param(self):
         """
@@ -147,32 +150,47 @@ class PGBN():
             for tag,value in info.items():
                 logger.scalar_summary(tag,value,my_iter)
 
-            if my_iter % 10 == 0:
+            if my_iter % 50 == 0:
                 print('{} | {} time : {} error : {} likelihood : {}'.format(my_iter,
                         iteration, end_time-start_time, error, likelihood))
+            if my_iter % self.save_fre and self.voc is not None:
+                with open(outpath + '/Phi.pick','wb') as f:
+                    pickle.dump(self.Phi, f)
+                with open(outpath + '/Theta.pick','wb') as f:
+                    pickle.dump(self.Theta, f)
+                self.Phi_vis()
+                # self.show_tree()
         with open(outpath + '/Phi.pick','wb') as f:
             pickle.dump(self.Phi, f)
         with open(outpath + '/Theta.pick','wb') as f:
             pickle.dump(self.Theta, f)
         print('sucessful save Phi, Theta in {}'.format(outpath))
-
-    def Phi_vis(self, outpath, voc, top_n = 20):
+	
+    def Phi_vis(self, outpath='output', top_n = 20):
         """
         visualize phi into .txt
         """
         if not os.path.exists(outpath):
             os.mkdir(outpath)
-        phi_vis = dic_topic_vision(self.Theta, self.Phi, voc)
+        phi_vis = dic_topic_vision(self.Theta, self.Phi, self.voc)
         phi_vis.vision_dic(outpath,top_n)
+    
+    def show_tree(self, topic_id=0,threshold=0.01, num=20):
+        ## show topic tree for topoic model
+        ## return graph, call the graph.render('tree') function will 
+        ## aotu-save tree.pdf file
+        return plot_tree(self.Phi, self.voc, topic_id=topic_id, threshold=threshold, num=num)
 
 
 if __name__ == '__main__':
-    train_data = sp.load_npz('./cord19_10000.npz')
+    train_data = sp.load_npz('./cord19_10000_tfidf.npz')
     train_data = train_data.toarray()
     np.random.seed(2018)
     np.random.shuffle(train_data)
     train_data = train_data.T
-    voc = np.load('./voc_10000.npy')
-    pgbn = PGBN(train_data,K=[128,64,32])
-    pgbn.train('./output',iteration = 1000)
-    pgbn.Phi_vis('./output',voc)
+    voc = np.load('./voc_10000_tfidf.npy')
+    pgbn = PGBN(train_data,K=[10,5,2,2,2,2],voc=voc)
+    pgbn.train('./output',iteration =2)
+    pgbn.Phi_vis()
+    graph = pgbn.show_tree()
+    graph.render('output/tree')
