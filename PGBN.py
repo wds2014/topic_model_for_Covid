@@ -158,7 +158,7 @@ class PGBN():
                     pickle.dump(self.Phi, f)
                 with open(outpath + '/Theta.pick','wb') as f:
                     pickle.dump(self.Theta, f)
-                self.Phi_vis()
+                self.Phi_vis(self.Phi)
                 # self.show_tree()
         with open(outpath + '/Phi.pick','wb') as f:
             pickle.dump(self.Phi, f)
@@ -166,31 +166,32 @@ class PGBN():
             pickle.dump(self.Theta, f)
         print('sucessful save Phi, Theta in {}'.format(outpath))
 	
-    def Phi_vis(self, outpath='output', top_n = 20):
+    def Phi_vis(self, phi, outpath='output', top_n = 20):
         """
         visualize phi into .txt
         """
         if not os.path.exists(outpath):
             os.mkdir(outpath)
-        phi_vis = dic_topic_vision(self.Theta, self.Phi, self.voc)
+        phi_vis = dic_topic_vision(phi, phi, self.voc)
         phi_vis.vision_dic(outpath,top_n)
     
-    def show_tree(self, topic_id=0,threshold=0.01, num=20):
+    def show_tree(self, phi, topic_id=0,threshold=0.01, num=20):
         ## show topic tree for topoic model
         ## return graph, call the graph.render('tree') function will 
         ## aotu-save tree.pdf file
-        return plot_tree(self.Phi, self.voc, topic_id=topic_id, threshold=threshold, num=num)
+        return plot_tree(phi, self.voc, topic_id=topic_id, threshold=threshold, num=num)
 
 
 if __name__ == '__main__':
-    train_data = sp.load_npz('./cord19_10000_tfidf.npz')
+    train_data = sp.load_npz('./cord19_10000.npz')
     train_data = train_data.toarray()
-    np.random.seed(2018)
-    np.random.shuffle(train_data)
+    #np.random.seed(2018)
+    #np.random.shuffle(train_data)
     train_data = train_data.T
-    voc = np.load('./voc_10000_tfidf.npy')
-    pgbn = PGBN(train_data,K=[10,5,2,2,2,2],voc=voc)
-    pgbn.train('./output',iteration =2)
-    pgbn.Phi_vis()
-    graph = pgbn.show_tree()
+    voc = np.load('./voc_10000.npy')
+    print(train_data.shape)
+    pgbn = PGBN(train_data,K=[400,200,64,32],voc=voc)
+    pgbn.train('./output',iteration =5000)
+    pgbn.Phi_vis(pgbn.Phi)
+    graph = pgbn.show_tree(pgbn.Phi)
     graph.render('output/tree')
