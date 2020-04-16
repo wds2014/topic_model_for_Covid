@@ -1,4 +1,3 @@
-
 import numpy as np
 from graphviz import Digraph
 import heapq
@@ -48,7 +47,7 @@ def plot_tree(weight,voc,topic_id=0,threshold=0.05,num=20):
         phi_down = phi[each-1]
         for each_top in idx_top:
             node(graph, voc, phi_top, layer=each, idx=each_top, num=num)
-            idx = np.where(weight_top[:,topic_id]>temp)
+            idx = np.where(weight_top[:,topic_id]>temp*0.5**(num_layer-1-each))
             for i in idx[0]:
                 node(graph, voc, phi_down, layer=each-1, idx=i,num=num)
                 graph.attr('edge', penwidth=str(weight_top[i][topic_id]*10))
@@ -76,4 +75,3 @@ def plot_tree(weight,voc,topic_id=0,threshold=0.05,num=20):
             # graph.edge('1_'+str(i),'0_'+str(j))
     # #graph.view()
     # return graph
-
